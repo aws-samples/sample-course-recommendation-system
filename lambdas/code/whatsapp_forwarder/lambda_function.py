@@ -18,6 +18,18 @@ retry_config = Config(
 
 bedrock_agent_runtime = boto3.client('bedrock-agent-runtime', config=retry_config)
 
+def mask_phone_number(phone_number):
+    """
+    Mask phone number for logging to protect PII
+    Shows only last 4 digits: +1234567890 -> ****7890
+    """
+    if not phone_number:
+        return "****"
+    phone_str = str(phone_number)
+    if len(phone_str) <= 4:
+        return "****"
+    return "*" * (len(phone_str) - 4) + phone_str[-4:]
+
 def lambda_handler(event, context):
     """
     Lambda handler for WhatsApp messages from AWS End User Messaging
@@ -78,6 +90,10 @@ def process_message(message, metadata):
             logger.error("No phone number found in message")
             return
         
+        # Log with masked phone number to protect PII
+        masked_phone = mask_phone_number(phone_number)
+        logger.info(f"Processing message from {masked_phone}")
+        
         # Extract message text based on type
         message_text = ""
         if message_type == 'text':
@@ -114,7 +130,7 @@ def process_message(message, metadata):
             return
         
         # Forward message to Bedrock Agent
-        logger.info(f"Forwarding message to Bedrock Agent: {message_text}")
+        logger.info(f"Forwarding message to Bedrock Agent from {masked_phone}")
         
         response = bedrock_agent_runtime.invoke_agent(
             agentId=agent_id,
@@ -179,7 +195,9 @@ def process_message(message, metadata):
 def send_carousel_template(message_id, phone_number, metadata):
     """Send WhatsApp carousel template for course catalog"""
     try:
-        client = boto3.client('socialmessaging', region_name='ap-south-1')
+        # Use the region from environment variable or default to the Lambda's region
+        region = os.environ.get('AWS_REGION', 'us-east-1')
+        client = boto3.client('socialmessaging', region_name=region)
         
         carousel_template = {
                 "messaging_product": "whatsapp",
@@ -344,7 +362,9 @@ def send_carousel_template(message_id, phone_number, metadata):
 def send_whatsapp_reply(message_id, phone_number, text, metadata):
     """Send a WhatsApp reply"""
     try:
-        client = boto3.client('socialmessaging', region_name='ap-south-1')
+        # Use the region from environment variable or default to the Lambda's region
+        region = os.environ.get('AWS_REGION', 'us-east-1')
+        client = boto3.client('socialmessaging', region_name=region)
         
         message_object = {
             "messaging_product": "whatsapp",

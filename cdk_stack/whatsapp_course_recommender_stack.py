@@ -126,16 +126,21 @@ class WhatsappCourseRecommenderStack(Stack):
                     "socialmessaging:SendWhatsAppMessage",
                     "socialmessaging:GetWhatsAppMessageMedia"
                 ],
-                resources=["*"]
+                resources=[
+                    f"arn:aws:social-messaging:{self.region}:{self.account}:phone-number-id/*"
+                ]
             )
         )
         
+        # Grant OpenSearch permissions - will be scoped to specific collection in production
         agent_actions.add_to_role_policy(
             iam.PolicyStatement(
                 actions=[
                     "aoss:APIAccessAll"
                 ],
-                resources=["*"]
+                resources=[
+                    f"arn:aws:aoss:{self.region}:{self.account}:collection/*"
+                ]
             )
         )
         
@@ -145,7 +150,10 @@ class WhatsappCourseRecommenderStack(Stack):
                 actions=[
                     "bedrock:InvokeModel"
                 ],
-                resources=["*"]
+                resources=[
+                    f"arn:aws:bedrock:{self.region}::foundation-model/amazon.titan-embed-text-v2:0",
+                    f"arn:aws:bedrock:{self.region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
+                ]
             )
         )
         

@@ -29,7 +29,10 @@ class BedrockAgentStack(Stack):
                     "bedrock:GetInferenceProfile",
                     "bedrock:GetFoundationModel"
                 ],
-                resources=["*"]
+                resources=[
+                    f"arn:aws:bedrock:{self.region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
+                    f"arn:aws:bedrock:{self.region}::foundation-model/amazon.titan-embed-text-v2:0"
+                ]
             )
         )
 

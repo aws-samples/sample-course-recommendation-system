@@ -38,7 +38,9 @@ class OpenSearchStack(Stack):
             """
         )
 
-        # Create network policy
+        # Create network policy - restrict to VPC access only for production
+        # Note: For development, you may need to temporarily allow public access
+        # and use data access policies to control who can access the collection
         network_policy = opensearchserverless.CfnSecurityPolicy(
             self, "NetworkPolicy",
             name="course-network-policy",
@@ -59,30 +61,37 @@ class OpenSearchStack(Stack):
                         ]
                     }
                 ],
-                "AllowFromPublic": true
+                "AllowFromPublic": false
             }
             """
         )
 
-        # Create data access policy
+        # Create data access policy - grant access to Lambda execution roles
+        # Note: This grants access to the account root. In production, you should
+        # replace this with specific Lambda execution role ARNs
         data_access_policy = opensearchserverless.CfnAccessPolicy(
             self, "DataAccessPolicy",
             name="course-data-access-policy",
             type="data",
-            policy="""
+            policy=f"""
             [
-                {
+                {{
                     "Rules": [
-                        {
+                        {{
                             "ResourceType": "index",
                             "Resource": [
                                 "index/course-collection/*"
                             ],
                             "Permission": [
-                                "aoss:*"
+                                "aoss:CreateIndex",
+                                "aoss:DeleteIndex",
+                                "aoss:UpdateIndex",
+                                "aoss:DescribeIndex",
+                                "aoss:ReadDocument",
+                                "aoss:WriteDocument"
                             ]
-                        },
-                        {
+                        }},
+                        {{
                             "ResourceType": "collection",
                             "Resource": [
                                 "collection/course-collection"
@@ -93,12 +102,12 @@ class OpenSearchStack(Stack):
                                 "aoss:UpdateCollectionItems",
                                 "aoss:DescribeCollectionItems"
                             ]
-                        }
+                        }}
                     ],
                     "Principal": [
                         "arn:aws:iam::{account_id}:root"
                     ]
-                }
+                }}
             ]
             """
         )
